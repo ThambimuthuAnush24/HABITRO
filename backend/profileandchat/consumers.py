@@ -27,24 +27,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender = await sync_to_async(User.objects.get)(id=sender_id)
         receiver = await sync_to_async(User.objects.get)(id=receiver_id)
         
-        # Create message instance
         message = Message(sender=sender, receiver=receiver)
-        message.set_text(message_text)  # This will encrypt the text
+        message.set_text(message_text)  # Encrypt the text
         await sync_to_async(message.save)()
 
         # Mark previous messages as read by receiver
         await self.mark_messages_as_read(sender_id, receiver_id)
 
-        # Broadcast to room
+        # Broadcast message to room
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': message_text,  # Send plain text to connected clients
+                'message': message_text,  # Plain text for clients
                 'sender_id': sender_id,
                 'receiver_id': receiver_id,
                 'timestamp': message.timestamp.isoformat(),
                 'message_id': message.id,
+                'is_read': False
             }
         )
 
@@ -60,6 +60,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await sync_to_async(mark_read)()
 
     async def chat_message(self, event):
+        """Send message to WebSocket client"""
         await self.send(text_data=json.dumps({
             'message': event['message'],
             'sender_id': event['sender_id'],

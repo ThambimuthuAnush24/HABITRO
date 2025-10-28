@@ -35,30 +35,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   List<Map<String, dynamic>> messages = [];
   bool _isLoading = true;
   bool _isTyping = false;
-  late AnimationController _fabAnimationController;
-  bool _showScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
-    _fabAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
     _initializeChat();
-
-    _scrollController.addListener(() {
-      final showFab = _scrollController.offset > 100;
-      if (showFab != _showScrollToBottom) {
-        setState(() => _showScrollToBottom = showFab);
-        if (showFab) {
-          _fabAnimationController.forward();
-        } else {
-          _fabAnimationController.reverse();
-        }
-      }
-    });
   }
 
   Future<void> _initializeChat() async {
@@ -69,7 +50,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     try {
       final pastMessages = await FriendChatService.fetchMessages(
-          widget.chatRoomId.replaceFirst('chat_', ''));
+        widget.chatRoomId.replaceFirst('chat_', ''),
+        page: 1,
+      );
       setState(() {
         messages = pastMessages;
         _isLoading = false;
@@ -87,14 +70,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     channel.stream.listen((data) {
       final decoded = jsonDecode(data);
       setState(() {
-        messages.add({
-          'message': decoded['message'],
-          'sender_id': decoded['sender_id'],
-          'receiver_id': decoded['receiver_id'],
-          'timestamp': decoded['timestamp'],
-          'message_id': decoded['message_id'] ?? decoded['id'], // Handle both
-          'is_read': decoded['is_read'] ?? false,
-        });
+        messages = [
+          ...messages,
+          {
+            'message': decoded['message'],
+            'sender_id': decoded['sender_id'],
+            'receiver_id': decoded['receiver_id'],
+            'timestamp': decoded['timestamp'],
+            'message_id': decoded['message_id'] ?? decoded['id'],
+            'is_read': decoded['is_read'] ?? false,
+          }
+        ];
       });
       _scrollToBottom();
     });
@@ -118,8 +104,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   void dispose() {
     channel.sink.close();
     _controller.dispose();
-    _scrollController.dispose();
-    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -140,16 +124,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   String _formatMessageTime(DateTime time) {
-    final now = DateTime.now().toLocal();
     final localTime = time.toLocal();
-
-    if (localTime.year == now.year &&
-        localTime.month == now.month &&
-        localTime.day == now.day) {
-      return DateFormat('HH:mm').format(localTime);
-    } else {
-      return DateFormat('dd/MM HH:mm').format(localTime);
-    }
+    return DateFormat('HH:mm').format(localTime);
   }
 
   String _formatDateHeader(DateTime date) {
@@ -303,12 +279,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               color: isMe ? AppColors.primary : Colors.white,
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft:
+                topLeft:
                     isMe ? const Radius.circular(16) : const Radius.circular(4),
-                bottomRight:
+                topRight:
                     isMe ? const Radius.circular(4) : const Radius.circular(16),
+                bottomLeft: const Radius.circular(16),
+                bottomRight: const Radius.circular(16),
               ),
               boxShadow: [
                 BoxShadow(
@@ -365,6 +341,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).viewInsets.bottom > 0 ? 0.0 : 90.0;
     final String? imageUrl = (widget.receiverProfilePic != null &&
             widget.receiverProfilePic!.startsWith('/media/'))
         ? '${dotenv.get('BASE_URL')}${widget.receiverProfilePic}'
@@ -373,9 +351,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 2,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -410,7 +387,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 ? const Center(
                     child: CircularProgressIndicator(
                       valueColor:
-                          AlwaysStoppedAnimation<Color>(Color(0xFF128C7E)),
+                          AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   )
                 : messages.isEmpty
@@ -445,7 +422,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       )
                     : ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.only(
+                          top: 8,
+                          left: 8,
+                          right: 8,
+                          bottom: bottomPadding, // Applied here
+                        ),
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
@@ -490,7 +472,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: AppColors.secondary,
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: Row(
@@ -503,8 +485,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               decoration: const InputDecoration(
                                 hintText: 'Type a message',
                                 border: InputBorder.none,
-                                contentPadding:
-                                    EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 10),
                               ),
                               onSubmitted: (_) => _sendMessage(),
                             ),
@@ -516,7 +498,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   const SizedBox(width: 8),
                   Container(
                     decoration: const BoxDecoration(
-                      color: Color(0xFF128C7E),
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(

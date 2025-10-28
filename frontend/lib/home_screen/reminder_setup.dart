@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:frontend/home_screen/home_screen.dart';
+import 'package:frontend/home_page.dart';
 import '../services/notification_service.dart';
 import '../services/ai_services.dart';
 
@@ -70,7 +70,7 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
         );
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const HomePage()),
           (route) => false,
         );
       } else {
@@ -98,11 +98,13 @@ class _ReminderSetupScreenState extends State<ReminderSetupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.access_alarm, size: 80, color: Theme.of(context).primaryColor),
+              Icon(Icons.access_alarm,
+                  size: 80, color: Theme.of(context).primaryColor),
               const SizedBox(height: 24),
               Text(
                 widget.habitName,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(

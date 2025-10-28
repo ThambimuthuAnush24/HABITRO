@@ -15,11 +15,11 @@ class FriendChatService {
   }
 
   static Future<int?> getCurrentUserId() async {
-  final prefs = await SharedPreferences.getInstance();
-  final userId = prefs.getInt('userId');
-  debugPrint('Read userId from shared preferences: $userId');
-  return userId;
-}
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    debugPrint('Read userId from shared preferences: $userId');
+    return userId;
+  }
 
   static Map<String, String> _headers(String token) {
     return {
@@ -57,12 +57,16 @@ class FriendChatService {
     return _handleResponse(response);
   }
 
-  static Future<List<Map<String, dynamic>>> fetchMessages(String roomId) async {
+  static Future<List<Map<String, dynamic>>> fetchMessages(String roomId, {int page = 1}) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse('$baseUrl/profile/fetch-messages/'),
       headers: _headers(token!),
-      body: jsonEncode({'room_id': roomId}),
+      body: jsonEncode({
+        'room_id': roomId,
+        'page': page,
+        'page_size': 50, // Keep same page size
+      }),
     );
     final data = _handleResponse(response);
     final List<dynamic> messagesJson = data['messages'] as List<dynamic>;

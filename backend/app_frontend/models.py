@@ -91,7 +91,12 @@ class CustomUser(AbstractBaseUser):
     REQUIRED_FIELDS = ['full_name']
 
     def __str__(self):
-        return self.email
+    # Prefer email, fallback to phone_number, then pk
+        if self.email:
+            return self.email
+        elif self.phone_number:
+            return self.phone_number
+        return str(self.pk)
 
     def has_perm(self, perm, obj=None):
         "Does the user have a specific permission?"

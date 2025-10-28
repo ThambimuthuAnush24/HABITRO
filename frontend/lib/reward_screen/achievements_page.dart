@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:frontend/api_services/achievement_service.dart';
+import 'package:frontend/theme.dart';
 
 class AchievementsPage extends StatefulWidget {
   final VoidCallback? onAchievementClaimed;
@@ -155,6 +156,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
                                         userAchievement['title'],
                                         style: const TextStyle(
                                             fontSize: 16,
+                                            color: AppColors.primary,
                                             fontWeight: FontWeight.bold),
                                       ),
                                       const SizedBox(height: 6),

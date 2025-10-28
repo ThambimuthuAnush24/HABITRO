@@ -42,7 +42,7 @@ class MemoryCard extends StatelessWidget {
     return InkWell(
       onTap: _handleCardTap,
       child: Card(
-        elevation: 8,
+        elevation: 2,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -50,7 +50,7 @@ class MemoryCard extends StatelessWidget {
         color:
             card.state == CardState.visible || card.state == CardState.guessed
                 ? card.color
-                : Colors.grey,
+                : Colors.grey[400],
         child: Center(
           child: card.state == CardState.hidden
               ? null

@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/api_config.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'otp_verification_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -179,92 +178,6 @@ class SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  Future<void> _handleFacebookSignIn() async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final LoginResult result = await FacebookAuth.instance.login();
-
-      if (result.status == LoginStatus.success) {
-        final userData = await FacebookAuth.instance.getUserData();
-
-        final OAuthCredential credential =
-            FacebookAuthProvider.credential(result.accessToken!.token);
-
-        final userCredential = await _auth.signInWithCredential(credential);
-        final User? user = userCredential.user;
-
-        if (user == null) {
-          throw Exception('Failed to get user data after Facebook Sign In');
-        }
-
-        if (!mounted) return;
-
-        final response = await http.post(
-          Uri.parse("${ApiConfig.baseUrl}social-login/"),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({
-            "email": userData['email'],
-            "full_name": userData['name'] ?? "Facebook User",
-            "provider": "facebook",
-            "provider_id": user.uid,
-          }),
-        );
-
-        if (!mounted) return;
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          // Extract token from response
-          final data = jsonDecode(response.body);
-          final token = data['token'];
-
-          if (token != null) {
-            // Save token securely in both locations
-            await storage.write(key: 'authToken', value: token);
-
-            // Also save in SharedPreferences for better compatibility
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('authToken', token);
-
-            // Set is_signed_in flag to true
-            await prefs.setBool('is_signed_in', true);
-          } else {
-            print("Warning: No token found in response");
-            // Set is_signed_in flag anyway
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('is_signed_in', true);
-          }
-
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          final error = jsonDecode(response.body);
-          throw Exception(
-              error['error'] ?? 'Failed to authenticate with server');
-        }
-      } else {
-        throw Exception('Facebook sign-in failed');
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      String errorMessage = 'Facebook sign-in failed';
-      if (e.toString().contains('network_error')) {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (e.toString().contains('cancelled')) {
-        errorMessage = 'Sign-in was canceled';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
 
   Future<void> _register() async {
     final identifier = _identifierController.text.trim();
@@ -424,6 +337,7 @@ class SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _socialButton(String assetPath, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -541,27 +455,37 @@ class SignUpScreenState extends State<SignUpScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _socialButton(
-                            'assets/images/google.png',
-                            _isLoading ? () {} : _handleGoogleSignIn,
-                          ),
-                          const SizedBox(width: 38),
-                          _socialButton(
-                            'assets/images/apple.png',
-                            () => ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Apple sign-in clicked')),
+                      Center(
+                        child: GestureDetector(
+                          onTap: _isLoading ? null : _handleGoogleSignIn,
+                          child: Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  'assets/images/google.png',
+                                  height: 28,
+                                  width: 28,
+                                ),
+                                const SizedBox(width: 14),
+                                const Text(
+                                  'Continue with Google',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 38),
-                          _socialButton(
-                            'assets/images/facebook.png',
-                            _isLoading ? () {} : _handleFacebookSignIn,
-                          ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Center(

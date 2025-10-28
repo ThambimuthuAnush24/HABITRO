@@ -1,7 +1,9 @@
+import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/api_services/quiz_service.dart';
 import 'package:frontend/components/standard_app_bar.dart';
 import 'package:frontend/models/quiz_model.dart';
+import 'package:frontend/theme.dart';
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
@@ -18,6 +20,7 @@ class _QuizScreenState extends State<QuizScreen> {
   int coins = 0;
   String selectedAnswer = '';
   bool isAnswerChecked = false;
+  bool _quizCompleted = false;
 
   @override
   void initState() {
@@ -96,6 +99,7 @@ class _QuizScreenState extends State<QuizScreen> {
     } catch (e) {
       showError('Failed to update coins: $e');
     }
+    setState(() => _quizCompleted = true); // Mark quiz as completed
     showScorePopup();
   }
 
@@ -125,79 +129,147 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Color getOptionColor(String option) {
     final correctAnswer = quizzes[currentQuestionIndex].answer;
-    if (!isAnswerChecked) return Colors.grey;
+    if (!isAnswerChecked) return AppColors.secondary;
 
     if (option == correctAnswer) {
-      return Colors.green;
+      return Colors.green.withValues(alpha: 0.5);
     } else if (option == selectedAnswer) {
-      return Colors.red;
+      return Colors.red.withValues(alpha: 0.5);
     } else {
-      return Colors.grey;
+      return AppColors.secondary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: StandardAppBar(appBarTitle: 'Quiz'),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : quizzes.isEmpty
-              ? const Center(child: Text("No quiz available"))
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LinearProgressIndicator(
-                        value: (currentQuestionIndex + 1) / quizzes.length,
-                        backgroundColor: Colors.grey[300],
-                        color: Colors.blueAccent,
-                        minHeight: 10,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Question ${currentQuestionIndex + 1}",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        quizzes[currentQuestionIndex].question,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      const SizedBox(height: 20),
-                      ...quizzes[currentQuestionIndex].options.map((option) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          decoration: BoxDecoration(
-                            color: getOptionColor(option),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ListTile(
-                            title: Text(
-                              option,
-                              style: const TextStyle(color: Colors.white),
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        // Allow back if quiz is completed
+        if (_quizCompleted) return true;
+
+        // Show confirmation dialog
+        final shouldQuit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Quit Quiz?'),
+            content: const Text(
+                'Your progress will be saved. You will earn coins for the questions you have answered correctly so far.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Quit'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldQuit == true) {
+          handleQuit();
+        }
+        return false; // Prevent default back behavior
+      },
+      child: Scaffold(
+        appBar: StandardAppBar(
+          appBarTitle: 'Quiz',
+          showBackButton: true,
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : quizzes.isEmpty
+                ? const Center(child: Text("No quiz available"))
+                : Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceEvenly, // spread evenly
+                          children: [
+                            Expanded(
+                              child: DotsIndicator(
+                                dotsCount: quizzes.length,
+                                position: currentQuestionIndex.toDouble(),
+                                decorator: DotsDecorator(
+                                  color: Colors.grey,
+                                  activeColor: AppColors.primary,
+                                  size: const Size(23.0, 9.0),
+                                  activeSize: const Size(23.0, 9.0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                  ),
+                                  activeShape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                  ),
+                                ),
+                              ),
                             ),
-                            onTap: () => handleAnswer(option),
-                          ),
-                        );
-                      }),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          ElevatedButton(
-                            onPressed: handleQuit,
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red),
-                            child: const Text("Quit"),
-                          ),
-                        ],
-                      )
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
+                        Text(
+                          quizzes[currentQuestionIndex].question,
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 20),
+                        ...quizzes[currentQuestionIndex].options.map((option) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: getOptionColor(option),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  width: 0.1, color: AppColors.primary),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black
+                                      .withValues(alpha: 0.1), // shadow color
+                                  blurRadius: 8, // softness of the shadow
+                                  offset: const Offset(0, 2), // position (x,y)
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              title: Center(
+                                child: Text(
+                                  option,
+                                  style: const TextStyle(
+                                      color: AppColors.blackText),
+                                ),
+                              ),
+                              onTap: () => handleAnswer(option),
+                            ),
+                          );
+                        }),
+                        const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: handleQuit,
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary),
+                              child: const Text(
+                                "Quit",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+      ),
     );
   }
 }

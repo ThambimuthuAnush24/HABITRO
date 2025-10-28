@@ -24,7 +24,7 @@ class AIService {
       // First try secure storage
       String? token = await _storage.read(key: 'authToken');
 
-      if (token != null && token.isNotEmpty) {
+      if (token!.isNotEmpty) {
         return token;
       }
 
@@ -32,7 +32,7 @@ class AIService {
       final prefs = await SharedPreferences.getInstance();
       token = prefs.getString('authToken');
 
-      if (token != null && token.isNotEmpty) {
+      if (token!.isNotEmpty) {
         // Save to secure storage for next time
         await _storage.write(key: 'authToken', value: token);
         return token;
@@ -248,6 +248,7 @@ class AIService {
         Uri.parse("$baseurl/api/get_habits/"),
         headers: _headers(token),
       );
+      print("Habits API response: ${response.body}");
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);

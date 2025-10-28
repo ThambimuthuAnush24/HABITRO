@@ -80,19 +80,20 @@ def claim_streak(request):
                 reward.streak_cycle_day = (reward.streak_cycle_day + 1) % 7
             else:
                 # Reset cycle if streak broken
-                reward.daily_streak = 1
+                reward.daily_streak = 0
                 reward.streak_cycle_day = 0
         else:
             # First claim
-            reward.daily_streak = 1
+            reward.daily_streak = 0
             reward.streak_cycle_day = 0
-
+        
+        reward.daily_streak += 1
         # Calculate today's reward
         today_reward = REWARD_CYCLE[reward.streak_cycle_day]
         
         # Update max streak and add gems
-        reward.max_streak = max(reward.max_streak, reward.daily_streak)
         reward.gems += today_reward
+        reward.max_streak = max(reward.max_streak, reward.daily_streak)
         reward.last_claim_date = now
         reward.save()
         

@@ -87,9 +87,10 @@ class AllChatState extends State<AllChat> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      //backgroundColor: const Color(0xFFF8F9FA),
       appBar: StandardAppBar(
         appBarTitle: "Chats",
+        showBackButton: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.black87),
@@ -180,7 +181,7 @@ class AllChatState extends State<AllChat> {
                           children: [
                             CircleAvatar(
                               radius: 28,
-                              backgroundColor: Colors.grey[200],
+                              backgroundColor: AppColors.primary,
                               backgroundImage: imageUrl != null
                                   ? NetworkImage(imageUrl)
                                   : null,
@@ -192,32 +193,6 @@ class AllChatState extends State<AllChat> {
                                     )
                                   : null,
                             ),
-                            if (hasUnread)
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF25D366),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                         title: Text(
@@ -255,7 +230,7 @@ class AllChatState extends State<AllChat> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: hasUnread
-                                      ? const Color(0xFF25D366)
+                                      ? AppColors.primary
                                       : Colors.grey[500],
                                   fontWeight: hasUnread
                                       ? FontWeight.w600
@@ -270,7 +245,7 @@ class AllChatState extends State<AllChat> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF25D366),
+                                  color: AppColors.primary,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -316,7 +291,7 @@ class AllChatState extends State<AllChat> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF25D366).withOpacity(0.3),
+              color:AppColors.primary.withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -329,7 +304,7 @@ class AllChatState extends State<AllChat> {
               MaterialPageRoute(builder: (_) => SelectFriendScreen()),
             ).then((_) => _loadChats());
           },
-          backgroundColor: const Color(0xFF25D366),
+          backgroundColor: AppColors.primary,
           child: const Icon(
             Icons.chat_rounded,
             color: Colors.white,

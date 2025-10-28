@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ChallengeService {
   // Update this URL to match your backend server
-  static const String baseUrl = 'http://192.168.8.102:8000';
+  static const String baseUrl = 'http://10.10.43.24:8000';
 
   // Get authentication token from storage
   static Future<String?> _getAuthToken() async {
@@ -16,7 +16,7 @@ class ChallengeService {
       final storage = FlutterSecureStorage();
       String? token = await storage.read(key: 'authToken');
 
-      if (token != null && token.isNotEmpty) {
+      if (token!.isNotEmpty) {
         print("Token found in secure storage");
 
         // Also save to SharedPreferences for redundancy
@@ -32,7 +32,7 @@ class ChallengeService {
       final prefs = await SharedPreferences.getInstance();
       token = prefs.getString('authToken');
 
-      if (token != null && token.isNotEmpty) {
+      if (token!.isNotEmpty) {
         print("Token found in SharedPreferences");
 
         // Also save it to secure storage for next time

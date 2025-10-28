@@ -14,6 +14,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
 ASGI_APPLICATION = 'config.asgi.application'
 
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     'channels',
     'cloudinary',
     'cloudinary_storage',
+    'notifications',
 ]
 
 CSRF_COOKIE_HTTPONLY = False  #########
@@ -209,3 +211,35 @@ CLOUDINARY_STORAGE = {
     'API_KEY': config('CLOUDINARY_API_KEY'),
     'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
+
+import firebase_admin
+from firebase_admin import credentials
+
+cred_path = os.path.join(BASE_DIR, 'credentials.json')
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+else:
+    print(f"Firebase credentials not found at: {cred_path}")
+    
+from celery.schedules import crontab
+
+CELERY_BROKER_URL = config('REDIS_URL')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+CELERY_BEAT_SCHEDULE = {
+    'daily-reminder-8am': {
+        'task': 'notifications.tasks.daily_reminder_task',
+        'schedule': crontab(hour=8, minute=0),
+    },
+    'streak-notification-9am': {
+        'task': 'notifications.tasks.streak_notification_task',
+        'schedule': crontab(hour=9, minute=0),
+    },
+}
+
+CELERY_TIMEZONE = 'Asia/Colombo'
+
+

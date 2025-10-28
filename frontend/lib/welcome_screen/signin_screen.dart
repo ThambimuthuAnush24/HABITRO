@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:frontend/services/biometric_auth_service.dart';
+
 class SignInScreen extends StatefulWidget {
   @override
   _SignInScreenState createState() => _SignInScreenState();
@@ -556,27 +557,46 @@ class _SignInScreenState extends State<SignInScreen> {
                           Expanded(child: Divider()),
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text("Sign in with"),
+                            child: Text("or"),
                           ),
                           Expanded(child: Divider()),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _socialIcon("assets/images/google.png",
-                              () => _onSocialSignIn("Google")),
-                          const SizedBox(width: 38),
-                          _socialIcon("assets/images/apple.png",
-                              () => _onSocialSignIn("Apple")),
-                          const SizedBox(width: 38),
-                          _socialIcon("assets/images/facebook.png",
-                              () => _onSocialSignIn("Facebook")),
-                        ],
+                      // Google button with image on left and text on right (like signup)
+                      Center(
+                        child: GestureDetector(
+                          onTap: _isLoading ? null : _handleGoogleSignIn,
+                          child: Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  'assets/images/google.png',
+                                  height: 28,
+                                  width: 28,
+                                ),
+                                const SizedBox(width: 14),
+                                const Text(
+                                  'Continue with Google',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 24),
-                      const SizedBox(height: 16),
                       Row(
                         children: const [
                           Expanded(child: Divider()),

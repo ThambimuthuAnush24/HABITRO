@@ -2,10 +2,12 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:frontend/components/standard_app_bar.dart';
 import 'package:frontend/reward_screen/game/card_item.dart';
 import 'package:frontend/reward_screen/game/game.dart';
 import 'package:confetti/confetti.dart';
 import 'package:frontend/api_services/game_service.dart';
+import 'package:frontend/theme.dart';
 
 class GameBoard extends StatefulWidget {
   const GameBoard({
@@ -25,6 +27,7 @@ class _GameBoardState extends State<GameBoard> {
   Duration remainingTime = const Duration(seconds: 180);
   int bestTime = 0;
   bool showConfetti = false;
+  bool _gameCompleted = false;
 
   @override
   void initState() {
@@ -32,6 +35,42 @@ class _GameBoardState extends State<GameBoard> {
     game = Game(widget.gameLevel);
     startTimer();
     _loadInitialStats();
+  }
+
+  Future<bool> _onBackPressed() async {
+    // If game is completed, allow normal back navigation
+    if (_gameCompleted) return true;
+
+    // If game is over (win/lose) but not completed (dialog shown), allow back
+    if (game.isGameOver || remainingTime.inSeconds <= 0) return true;
+
+    // Show confirmation dialog for quitting
+    final shouldQuit = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Quit Game?'),
+        content: const Text(
+            'Are you sure you want to quit? Your progress will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Quit'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldQuit == true) {
+      timer.cancel();
+      Navigator.pop(context);
+    }
+
+    return false; // Prevent default back behavior
   }
 
   void _loadInitialStats() async {
@@ -95,17 +134,20 @@ class _GameBoardState extends State<GameBoard> {
               setState(() {
                 showConfetti = true;
                 bestTime = result['best_time'];
+                _gameCompleted = true;
               });
               _showResultDialog(true);
             }
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to submit score: ${e.toString()}')),
+              SnackBar(
+                  content: Text('Failed to submit score: ${e.toString()}')),
             );
           }
         }
       } else {
         timer.cancel();
+        setState(() => _gameCompleted = true);
         if (mounted) _showResultDialog(false);
       }
     });
@@ -148,44 +190,49 @@ class _GameBoardState extends State<GameBoard> {
   Widget build(BuildContext context) {
     final aspectRatio = MediaQuery.of(context).size.aspectRatio;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 60,
-                  child: Center(
-                    child: !game.isGameOver
-                        ? IconButton(
-                            icon: const Icon(Icons.pause_circle_filled),
-                            color: Colors.amberAccent[700]!,
-                            iconSize: 40,
-                            onPressed: () => _showPauseDialog(),
-                          )
-                        : null,
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Scaffold(
+        appBar: StandardAppBar(appBarTitle: 'Habitro Quest',showBackButton: true,),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 60,
+                    child: Center(
+                      child: !game.isGameOver
+                          ? IconButton(
+                              icon: const Icon(Icons.pause_circle_filled),
+                              color: AppColors.primary,
+                              iconSize: 40,
+                              onPressed: () => _showPauseDialog(),
+                            )
+                          : null,
+                    ),
                   ),
-                ),
-                GameTimerMobile(time: remainingTime),
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: game.gridSize,
-                    childAspectRatio: aspectRatio * 2,
-                    children: List.generate(game.cards.length, (index) {
-                      return MemoryCard(
-                          index: index,
-                          card: game.cards[index],
-                          onCardPressed: game.onCardPressed);
-                    }),
+                  GameTimerMobile(time: remainingTime),
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: game.gridSize,
+                      childAspectRatio: aspectRatio * 2,
+                      children: List.generate(game.cards.length, (index) {
+                        return MemoryCard(
+                            index: index,
+                            card: game.cards[index],
+                            onCardPressed: game.onCardPressed);
+                      }),
+                    ),
                   ),
-                ),
-                GameBestTimeMobile(bestTime: bestTime),
-              ],
-            ),
-            showConfetti ? const GameConfetti() : const SizedBox(),
-          ],
+                  GameBestTimeMobile(bestTime: bestTime),
+                ],
+              ),
+              showConfetti ? const GameConfetti() : const SizedBox(),
+            ],
+          ),
         ),
       ),
     );
@@ -212,7 +259,7 @@ class GameBestTimeMobile extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      color: Colors.greenAccent[700],
+      color: AppColors.primary,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(
@@ -222,6 +269,7 @@ class GameBestTimeMobile extends StatelessWidget {
               child: Icon(
                 Icons.celebration,
                 size: 40,
+                color: Colors.white,
               ),
             ),
             Expanded(
@@ -234,6 +282,7 @@ class GameBestTimeMobile extends StatelessWidget {
                     .first
                     .padLeft(8, "0"),
                 style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 28.0,
                   fontWeight: FontWeight.bold,
                 ),
@@ -266,7 +315,7 @@ class GameTimerMobile extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      color: Colors.red[700],
+      color: Colors.red[400],
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(

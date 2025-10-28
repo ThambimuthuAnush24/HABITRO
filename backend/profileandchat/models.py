@@ -31,7 +31,7 @@ class UserProfile(models.Model):
         storage=MediaCloudinaryStorage(),
         null=True,
         blank=True,
-        default='profile_pics/default.png'
+        default='profile_pics/x4sv9zv9z30gauxmhncz'
     )
 
     def __str__(self):

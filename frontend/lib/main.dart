@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:frontend/services/notification_service.dart';
+import 'package:frontend/api_services/notifications_service.dart';
 import 'package:frontend/welcome_screen/splash_screen.dart';
 import 'package:frontend/welcome_screen/welcome_tutorial_screen.dart';
 import 'package:frontend/welcome_screen/signup_screen.dart';
@@ -21,7 +21,7 @@ Future<void> main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await NotificationService.init();
+  await NotificationsService.initialize();
   // Wrap your app with DevicePreview
   runApp(
     ChangeNotifierProvider(
@@ -41,6 +41,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
+      navigatorKey: navigatorKey,
       // ignore: deprecated_member_use
       useInheritedMediaQuery: true, // IMPORTANT: enables responsiveness with Device Preview
       locale: DevicePreview.locale(context), // to use Device Preview locale

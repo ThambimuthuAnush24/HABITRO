@@ -70,10 +70,20 @@ def list_friends(request):
             is_deleted_by_receiver=False
         ).count()
 
+        # Safe profile pic handling
+        try:
+            profile_pic = (
+                friend.profile.profile_pic.url 
+                if friend.profile and friend.profile.profile_pic 
+                else None
+            )
+        except UserProfile.DoesNotExist:
+            profile_pic = None
+
         data.append({
             'id': friend.id,
             'name': friend.full_name,
-            'profile_pic': friend.profile.profile_pic.url if friend.profile.profile_pic else None,
+            'profile_pic': profile_pic,
             'last_message': last_msg.text if last_msg else None,
             'last_sender_id': last_msg.sender.id if last_msg else None,
             'timestamp': last_msg.timestamp.isoformat() if last_msg else None,
@@ -83,6 +93,7 @@ def list_friends(request):
     # Sort by timestamp (most recent first)
     data.sort(key=lambda x: x['timestamp'] or '', reverse=True)
     return Response(data)
+
 
 
 @api_view(['POST'])
@@ -152,11 +163,12 @@ def fetch_messages(request):
 
     # Mark messages as read if user is receiver
     other_user_id = id2 if user.id == id1 else id1
-    Message.objects.filter(
-        sender_id=other_user_id,
-        receiver=user,
-        is_read=False
-    ).update(is_read=True)
+    if page == 1:
+        Message.objects.filter(
+            sender_id=other_user_id,
+            receiver=user,
+            is_read=False
+        ).update(is_read=True)
 
     serialized_messages = MessageSerializer(paginated_messages, many=True).data
     
@@ -221,7 +233,7 @@ def update_profile(request):
     except UserProfile.DoesNotExist:
         return Response({'error': 'Profile not found'}, status=404)
 
-    data = request.data.copy()
+    data = request.data
     serializer = UserProfileSerializer(profile, data=data, partial=True)
     
     if serializer.is_valid():
